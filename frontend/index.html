@@ -14,17 +14,28 @@
     <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
   </head>
   <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
     <div class="page-shell">
       <header class="hero">
-        <div>
+        <div class="hero-copywrap">
           <p class="eyebrow">Graph-based SAP O2C exploration</p>
           <h1>Context Graph Query System</h1>
           <p class="hero-copy">
             Explore sales orders, deliveries, billing documents, journal entries, payments, customers,
             products, plants, and addresses in one connected workspace.
           </p>
+          <div class="hero-tags">
+            <span class="hero-tag">Grounded SQL answers</span>
+            <span class="hero-tag">Interactive flow graph</span>
+            <span class="hero-tag">Domain guardrails</span>
+          </div>
         </div>
         <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-kicker">Operational Snapshot</span>
+            <span class="hero-card-dot"></span>
+          </div>
           <div class="metric">
             <span class="metric-label">Graph scope</span>
             <strong id="entity-count">-</strong>
@@ -43,7 +54,10 @@
       <main class="workspace">
         <section class="chat-panel">
           <div class="panel-header">
-            <h2>Conversational Query</h2>
+            <div>
+              <span class="section-label">Analysis Console</span>
+              <h2>Conversational Query</h2>
+            </div>
             <p>Queries are grounded in the dataset only.</p>
           </div>
 
@@ -78,8 +92,18 @@
 
         <section class="graph-panel">
           <div class="panel-header">
-            <h2>Graph View</h2>
+            <div>
+              <span class="section-label">Relationship Layer</span>
+              <h2>Graph View</h2>
+            </div>
             <p>Overview graph first, query-specific graph after each answer.</p>
+          </div>
+          <div class="graph-legend">
+            <span class="legend-pill legend-order">Orders</span>
+            <span class="legend-pill legend-delivery">Deliveries</span>
+            <span class="legend-pill legend-billing">Billing</span>
+            <span class="legend-pill legend-finance">Finance</span>
+            <span class="legend-pill legend-master">Master Data</span>
           </div>
           <div id="graph" class="graph-canvas"></div>
           <div class="details-grid">
