@@ -18,6 +18,19 @@ This project turns the supplied SAP O2C dataset into a graph-backed analytics wo
 
 ## Architecture Decisions
 
+### Architecture overview
+
+```mermaid
+flowchart LR
+    A[Raw SAP O2C JSONL tables] --> B[Ingestion and normalization]
+    B --> C[SQLite analytical store]
+    C --> D[FastAPI query layer]
+    D --> E[Graph builder]
+    D --> F[Intent templates and optional LLM SQL planner]
+    E --> G[Graph UI]
+    F --> G
+```
+
 ### Database choice
 
 SQLite was chosen because the dataset is small enough to fit comfortably in a local analytical store, requires no extra service to run, and lets the system expose the exact SQL executed for each grounded answer.
@@ -43,6 +56,9 @@ The backend uses a layered approach:
 1. Guardrail check to reject prompts outside the dataset domain.
 2. Intent templates for the highest-value business questions:
    - top billed products
+   - top billed customers
+   - open or unpaid billing documents
+   - plant-wise shipped volume
    - billing document trace
    - sales order trace
    - incomplete O2C flows
@@ -108,6 +124,9 @@ The SQL planner expects an OpenAI-compatible chat endpoint that returns JSON mod
 ## Example Questions
 
 - `Which products are associated with the highest number of billing documents?`
+- `Which customers have the highest billed amount?`
+- `Show unpaid billing documents`
+- `Which plants shipped the highest delivery volume?`
 - `Trace the full flow of billing document 90504298`
 - `Trace sales order 740506`
 - `Identify sales orders that have incomplete flows`

@@ -40,7 +40,10 @@ class QueryEngine:
         question = question.strip()
         if not self._is_in_domain(question):
             return ChatResponse(
-                answer="This system is designed to answer questions related to the provided SAP O2C dataset only.",
+                answer=(
+                    "This system is designed to answer questions related to the provided SAP O2C dataset only. "
+                    "Ask about sales orders, deliveries, billing documents, journal entries, payments, customers, products, or plants."
+                ),
                 guardrail_blocked=True,
                 suggestions=[
                     "Which products are associated with the highest number of billing documents?",
@@ -51,6 +54,9 @@ class QueryEngine:
 
         planned = (
             self._try_top_products(question)
+            or self._try_customer_billing_summary(question)
+            or self._try_unpaid_billing_documents(question)
+            or self._try_plant_delivery_volume(question)
             or self._try_trace_billing(question)
             or self._try_trace_sales_order(question)
             or self._try_incomplete_flows(question)
@@ -65,6 +71,9 @@ class QueryEngine:
                 ),
                 suggestions=[
                     "Show the top billed products",
+                    "Which customers have the highest billed amount?",
+                    "Show unpaid billing documents",
+                    "Which plants shipped the highest delivery volume?",
                     "Trace billing document 90504298",
                     "Find delivered but not billed sales orders",
                 ],
@@ -107,9 +116,11 @@ class QueryEngine:
             if not rows:
                 return "No billed products were found in the dataset."
             top = rows[0]
+            evidence = self._format_ids("billing docs", [row["material"] for row in rows[:3]])
             return (
                 f"{top['product_description']} ({top['material']}) appears in the highest number of billing documents: "
-                f"{top['billing_document_count']} documents, with {top['billed_net_amount']} billed net amount."
+                f"{top['billing_document_count']} documents, with {top['billed_net_amount']} billed net amount. "
+                f"Top materials in this result set: {evidence}."
             )
 
         def graph(rows: list[dict[str, Any]]) -> GraphPayload:
@@ -142,6 +153,224 @@ class QueryEngine:
                         "source": product_id,
                         "target": metric_id,
                         "label": "appears_in",
+                    }
+                )
+            return GraphPayload.model_validate({"nodes": nodes, "edges": edges})
+
+        return PlannedQuery(sql=sql, params=(), answer=answer, graph=graph)
+
+    def _try_customer_billing_summary(self, question: str) -> PlannedQuery | None:
+        lowered = question.lower()
+        if "customer" not in lowered:
+            return None
+        if "billing" not in lowered and "billed" not in lowered and "invoice" not in lowered and "revenue" not in lowered:
+            return None
+        if "top" not in lowered and "highest" not in lowered and "most" not in lowered:
+            return None
+
+        sql = """
+            SELECT
+                COALESCE(bp.business_partner, bp.customer, bdh.sold_to_party) AS customer_id,
+                COALESCE(bp.business_partner_full_name, bdh.sold_to_party, 'Unknown customer') AS customer_name,
+                COUNT(DISTINCT bdh.billing_document) AS billing_document_count,
+                ROUND(SUM(COALESCE(bdh.total_net_amount, 0)), 2) AS billed_net_amount
+            FROM billing_document_headers bdh
+            LEFT JOIN business_partners bp
+                ON bp.business_partner = bdh.sold_to_party
+                OR bp.customer = bdh.sold_to_party
+            GROUP BY customer_id, customer_name
+            ORDER BY billed_net_amount DESC, billing_document_count DESC
+            LIMIT 10
+        """
+
+        def answer(rows: list[dict[str, Any]]) -> str:
+            if not rows:
+                return "No customer billing summary could be derived from the dataset."
+            top = rows[0]
+            evidence = self._format_ids("customers", [row["customer_id"] for row in rows[:3]])
+            return (
+                f"{top['customer_name']} ({top['customer_id']}) has the highest billed amount in the dataset: "
+                f"{top['billed_net_amount']} across {top['billing_document_count']} billing documents. "
+                f"Leading customers in this result set: {evidence}."
+            )
+
+        def graph(rows: list[dict[str, Any]]) -> GraphPayload:
+            nodes = []
+            edges = []
+            for row in rows[:6]:
+                customer_id = row["customer_id"]
+                customer_node_id = make_node_id("customer", customer_id)
+                metric_id = f"metric:customer:{customer_id}"
+                nodes.append(
+                    {
+                        "id": customer_node_id,
+                        "label": row["customer_name"],
+                        "type": "customer",
+                        "metadata": row,
+                        "highlight": 1 if row == rows[0] else 0,
+                    }
+                )
+                nodes.append(
+                    {
+                        "id": metric_id,
+                        "label": f"{row['billed_net_amount']} billed",
+                        "type": "metric",
+                        "metadata": row,
+                        "highlight": 1 if row == rows[0] else 0,
+                    }
+                )
+                edges.append(
+                    {
+                        "id": f"{customer_node_id}->{metric_id}",
+                        "source": customer_node_id,
+                        "target": metric_id,
+                        "label": "billed_amount",
+                    }
+                )
+            return GraphPayload.model_validate({"nodes": nodes, "edges": edges})
+
+        return PlannedQuery(sql=sql, params=(), answer=answer, graph=graph)
+
+    def _try_unpaid_billing_documents(self, question: str) -> PlannedQuery | None:
+        lowered = question.lower()
+        if "unpaid" not in lowered and "open" not in lowered and "not paid" not in lowered:
+            return None
+        if "billing" not in lowered and "invoice" not in lowered and "document" not in lowered:
+            return None
+
+        sql = """
+            SELECT
+                bdh.billing_document,
+                bdh.billing_document_date,
+                bdh.sold_to_party,
+                COALESCE(bp.business_partner_full_name, bdh.sold_to_party, 'Unknown customer') AS customer_name,
+                ROUND(COALESCE(bdh.total_net_amount, 0), 2) AS billed_net_amount,
+                je.accounting_document,
+                pay.clearing_accounting_document
+            FROM billing_document_headers bdh
+            LEFT JOIN business_partners bp
+                ON bp.business_partner = bdh.sold_to_party
+                OR bp.customer = bdh.sold_to_party
+            LEFT JOIN journal_entry_items_accounts_receivable je
+                ON je.reference_document = bdh.billing_document
+            LEFT JOIN payments_accounts_receivable pay
+                ON pay.accounting_document = je.accounting_document
+                AND pay.accounting_document_item = je.accounting_document_item
+            WHERE je.accounting_document IS NULL OR pay.clearing_accounting_document IS NULL
+            ORDER BY billed_net_amount DESC, bdh.billing_document
+            LIMIT 20
+        """
+
+        def answer(rows: list[dict[str, Any]]) -> str:
+            if not rows:
+                return "No open or unpaid billing documents were found by the current journal-entry and clearing checks."
+            top = rows[0]
+            evidence = self._format_ids("billing documents", [row["billing_document"] for row in rows[:5]])
+            return (
+                f"I found {len(rows)} open billing documents in the result set. "
+                f"The largest open billing document is {top['billing_document']} for {top['customer_name']}, "
+                f"worth {top['billed_net_amount']}. Examples: {evidence}."
+            )
+
+        def graph(rows: list[dict[str, Any]]) -> GraphPayload:
+            nodes = []
+            edges = []
+            for row in rows[:8]:
+                customer_id = row.get("sold_to_party") or "unknown"
+                billing_id = make_node_id("billing_document", row["billing_document"])
+                customer_node_id = make_node_id("customer", customer_id)
+                nodes.append(
+                    {
+                        "id": billing_id,
+                        "label": f"BILL {row['billing_document']}",
+                        "type": "billing_document",
+                        "metadata": row,
+                        "highlight": 1 if row == rows[0] else 0,
+                    }
+                )
+                nodes.append(
+                    {
+                        "id": customer_node_id,
+                        "label": row["customer_name"],
+                        "type": "customer",
+                        "metadata": {"customer_id": customer_id},
+                        "highlight": 1 if row == rows[0] else 0,
+                    }
+                )
+                edges.append(
+                    {
+                        "id": f"{customer_node_id}->{billing_id}",
+                        "source": customer_node_id,
+                        "target": billing_id,
+                        "label": "open_billing",
+                    }
+                )
+            return GraphPayload.model_validate({"nodes": nodes, "edges": edges})
+
+        return PlannedQuery(sql=sql, params=(), answer=answer, graph=graph)
+
+    def _try_plant_delivery_volume(self, question: str) -> PlannedQuery | None:
+        lowered = question.lower()
+        if "plant" not in lowered:
+            return None
+        if "delivery" not in lowered and "shipped" not in lowered and "volume" not in lowered:
+            return None
+        if "top" not in lowered and "highest" not in lowered and "most" not in lowered:
+            return None
+
+        sql = """
+            SELECT
+                odi.plant,
+                COUNT(DISTINCT odi.delivery_document) AS delivery_count,
+                ROUND(SUM(COALESCE(odi.actual_delivery_quantity, 0)), 2) AS delivered_quantity
+            FROM outbound_delivery_items odi
+            WHERE odi.plant IS NOT NULL
+            GROUP BY odi.plant
+            ORDER BY delivered_quantity DESC, delivery_count DESC
+            LIMIT 10
+        """
+
+        def answer(rows: list[dict[str, Any]]) -> str:
+            if not rows:
+                return "No plant delivery volume could be computed from the dataset."
+            top = rows[0]
+            evidence = self._format_ids("plants", [row["plant"] for row in rows[:3]])
+            return (
+                f"Plant {top['plant']} has the highest shipped volume in this dataset slice: "
+                f"{top['delivered_quantity']} units across {top['delivery_count']} deliveries. "
+                f"Leading plants in this result set: {evidence}."
+            )
+
+        def graph(rows: list[dict[str, Any]]) -> GraphPayload:
+            nodes = []
+            edges = []
+            for row in rows[:6]:
+                plant_id = make_node_id("plant", row["plant"])
+                metric_id = f"metric:plant:{row['plant']}"
+                nodes.append(
+                    {
+                        "id": plant_id,
+                        "label": f"Plant {row['plant']}",
+                        "type": "plant",
+                        "metadata": row,
+                        "highlight": 1 if row == rows[0] else 0,
+                    }
+                )
+                nodes.append(
+                    {
+                        "id": metric_id,
+                        "label": f"{row['delivered_quantity']} qty",
+                        "type": "metric",
+                        "metadata": row,
+                        "highlight": 1 if row == rows[0] else 0,
+                    }
+                )
+                edges.append(
+                    {
+                        "id": f"{plant_id}->{metric_id}",
+                        "source": plant_id,
+                        "target": metric_id,
+                        "label": "delivery_volume",
                     }
                 )
             return GraphPayload.model_validate({"nodes": nodes, "edges": edges})
@@ -225,7 +454,8 @@ class QueryEngine:
             ]
             if row.get("clearing_accounting_document"):
                 parts.append(f"cleared by payment document {row['clearing_accounting_document']}")
-            return ", ".join(parts) + "."
+            materials = [row["material"] for row in rows if row.get("material")]
+            return ", ".join(parts) + f". Line-level evidence includes materials: {self._format_ids('materials', materials[:3])}."
 
         def graph(rows: list[dict[str, Any]]) -> GraphPayload:
             highlighted = {make_node_id("billing_document", document_id)}
@@ -300,7 +530,9 @@ class QueryEngine:
             billings = sorted({row["billing_document"] for row in rows if row.get("billing_document")})
             return (
                 f"Sales order {document_id} has {len(rows)} line-level flow rows, "
-                f"{len(deliveries)} linked deliveries, and {len(billings)} linked billing documents."
+                f"{len(deliveries)} linked deliveries, and {len(billings)} linked billing documents. "
+                f"Example deliveries: {self._format_ids('deliveries', deliveries[:3])}; "
+                f"example billings: {self._format_ids('billing documents', billings[:3])}."
             )
 
         def graph(rows: list[dict[str, Any]]) -> GraphPayload:
@@ -363,11 +595,13 @@ class QueryEngine:
             if not rows:
                 return "No incomplete sales-order flows were found with the delivered-vs-billed checks."
             top = rows[0]
+            examples = self._format_ids("sales orders", [row["sales_order"] for row in rows[:5]])
             return (
                 f"I found {len(rows)} sales orders with incomplete flows. "
                 f"The most severe is sales order {top['sales_order']} for {top['customer_name']}, "
                 f"with {top['delivered_not_billed_lines']} delivered-not-billed lines and "
-                f"{top['billed_without_delivery_lines']} billed-without-delivery lines."
+                f"{top['billed_without_delivery_lines']} billed-without-delivery lines. "
+                f"Examples from the result set: {examples}."
             )
 
         def graph(rows: list[dict[str, Any]]) -> GraphPayload:
@@ -406,3 +640,9 @@ class QueryEngine:
     def _extract_id(self, text: str) -> str | None:
         match = re.search(r"\b\d{6,12}\b", text)
         return match.group(0) if match else None
+
+    def _format_ids(self, label: str, values: list[Any]) -> str:
+        clean = [str(value) for value in values if value]
+        if not clean:
+            return f"no {label}"
+        return ", ".join(clean)

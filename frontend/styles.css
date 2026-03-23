@@ -132,6 +132,13 @@ h1 {
   margin-bottom: 16px;
 }
 
+.inline-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .sample-prompt,
 .chat-form button {
   border: 0;

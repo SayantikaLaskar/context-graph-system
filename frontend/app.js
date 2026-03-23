@@ -9,7 +9,7 @@ const llmStatusEl = document.getElementById("llm-status");
 
 let cy;
 
-function addMessage(role, content) {
+function addMessage(role, content, suggestions = []) {
   const wrapper = document.createElement("article");
   wrapper.className = `message ${role}`;
 
@@ -21,6 +21,21 @@ function addMessage(role, content) {
   body.textContent = content;
 
   wrapper.append(header, body);
+
+  if (role === "assistant" && suggestions.length) {
+    const suggestionStrip = document.createElement("div");
+    suggestionStrip.className = "inline-suggestions";
+    suggestions.forEach((suggestion) => {
+      const button = document.createElement("button");
+      button.className = "sample-prompt";
+      button.type = "button";
+      button.textContent = suggestion;
+      button.addEventListener("click", () => runQuery(suggestion));
+      suggestionStrip.append(button);
+    });
+    wrapper.append(suggestionStrip);
+  }
+
   messagesEl.prepend(wrapper);
 }
 
@@ -154,7 +169,12 @@ async function bootstrap() {
   initGraph(payload.overviewGraph);
   addMessage(
     "assistant",
-    "The dataset has been loaded. Ask about billed products, incomplete flows, or trace a document through the O2C lifecycle."
+    "The dataset has been loaded. Ask about billed products, top customers, open billing documents, incomplete flows, or trace a document through the O2C lifecycle.",
+    [
+      "Which customers have the highest billed amount?",
+      "Show unpaid billing documents",
+      "Which plants shipped the highest delivery volume?",
+    ]
   );
 }
 
@@ -166,7 +186,7 @@ async function runQuery(prompt) {
     body: JSON.stringify({ message: prompt }),
   });
   const payload = await response.json();
-  addMessage("assistant", payload.answer);
+  addMessage("assistant", payload.answer, payload.suggestions || []);
   sqlPreviewEl.textContent = payload.query.sql || "No SQL executed.";
   inspectorEl.textContent = payload.query.rows.length
     ? JSON.stringify(payload.query.rows.slice(0, 5), null, 2)
