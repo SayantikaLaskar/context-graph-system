@@ -17,6 +17,18 @@
     <div class="ambient ambient-one"></div>
     <div class="ambient ambient-two"></div>
     <div class="page-shell">
+      <div class="topbar">
+        <div class="topbar-brand">
+          <span class="brand-mark"></span>
+          <span class="brand-text">SAP O2C Context Intelligence</span>
+        </div>
+        <div class="topbar-status">
+          <span class="status-chip">SQL-backed</span>
+          <span class="status-chip">Graph-native</span>
+          <span class="status-chip">Submission build</span>
+        </div>
+      </div>
+
       <header class="hero">
         <div class="hero-copywrap">
           <p class="eyebrow">Graph-based SAP O2C exploration</p>
@@ -105,7 +117,10 @@
             <span class="legend-pill legend-finance">Finance</span>
             <span class="legend-pill legend-master">Master Data</span>
           </div>
-          <div id="graph" class="graph-canvas"></div>
+          <div class="graph-stage">
+            <div class="graph-stage-badge">Click nodes to inspect metadata and document context</div>
+            <div id="graph" class="graph-canvas"></div>
+          </div>
           <div class="details-grid">
             <article class="inspector-card">
               <h3>Node Inspector</h3>

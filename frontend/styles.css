@@ -36,6 +36,14 @@ body {
     radial-gradient(circle at 10% 8%, rgba(163, 63, 49, 0.14), transparent 24%),
     radial-gradient(circle at 88% 12%, rgba(28, 90, 94, 0.16), transparent 28%),
     linear-gradient(180deg, #f7f1e5, #eee1ca 50%, #ead8bc 100%);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 320ms ease, transform 320ms ease;
+}
+
+body.ready {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 body::before {
@@ -85,6 +93,54 @@ body::before {
   width: min(1440px, calc(100vw - 32px));
   margin: 0 auto;
   padding: 28px 0 36px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 10px 16px;
+  border: 1px solid rgba(24, 20, 15, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 252, 247, 0.5);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-soft);
+}
+
+.topbar-brand,
+.topbar-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.brand-mark {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--teal));
+  box-shadow: 0 0 0 6px rgba(163, 63, 49, 0.08);
+}
+
+.brand-text {
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.status-chip {
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(24, 20, 15, 0.08);
+  color: var(--ink);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .hero {
@@ -443,6 +499,26 @@ h3 {
     );
 }
 
+.graph-stage {
+  position: relative;
+}
+
+.graph-stage-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  padding: 9px 12px;
+  border-radius: 999px;
+  background: rgba(255, 253, 247, 0.88);
+  border: 1px solid rgba(24, 20, 15, 0.08);
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: var(--shadow-soft);
+}
+
 .details-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -492,6 +568,11 @@ h3 {
 }
 
 @media (max-width: 1180px) {
+  .topbar {
+    flex-direction: column;
+    align-items: start;
+  }
+
   .hero,
   .workspace,
   .details-grid {
@@ -515,6 +596,10 @@ h3 {
     padding: 18px 0 24px;
   }
 
+  .topbar {
+    padding: 12px 14px;
+  }
+
   .hero-copywrap,
   .hero-card,
   .chat-panel,
@@ -536,6 +621,12 @@ h3 {
 
   .graph-canvas {
     height: 480px;
+  }
+
+  .graph-stage-badge {
+    position: static;
+    display: inline-flex;
+    margin-bottom: 10px;
   }
 
   .messages {

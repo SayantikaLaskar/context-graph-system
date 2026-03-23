@@ -167,6 +167,7 @@ async function bootstrap() {
   tableCountEl.textContent = Object.keys(payload.metadata.tables).length;
   llmStatusEl.textContent = payload.llmEnabled ? "Enabled" : "Template mode";
   initGraph(payload.overviewGraph);
+  document.body.classList.add("ready");
   addMessage(
     "assistant",
     "The dataset has been loaded. Ask about billed products, top customers, open billing documents, incomplete flows, or trace a document through the O2C lifecycle.",
@@ -216,5 +217,6 @@ document.querySelectorAll(".sample-prompt").forEach((button) => {
 
 bootstrap().catch((error) => {
   console.error(error);
+  document.body.classList.add("ready");
   addMessage("assistant", "Bootstrap failed. Check the backend logs and dataset paths.");
 });
