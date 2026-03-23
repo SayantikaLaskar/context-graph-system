@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+backend/.env
+data/raw/dataset_download
+data/raw/dataset.zip
+data/raw/extracted/
+data/processed/
+frontend/vendor/
+node_modules/
+dist/

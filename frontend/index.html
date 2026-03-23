@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Context Graph System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Graph-based SAP O2C exploration</p>
+          <h1>Context Graph Query System</h1>
+          <p class="hero-copy">
+            Explore sales orders, deliveries, billing documents, journal entries, payments, customers,
+            products, plants, and addresses in one connected workspace.
+          </p>
+        </div>
+        <div class="hero-card">
+          <div class="metric">
+            <span class="metric-label">Graph scope</span>
+            <strong id="entity-count">-</strong>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Dataset tables</span>
+            <strong id="table-count">-</strong>
+          </div>
+          <div class="metric">
+            <span class="metric-label">LLM SQL planner</span>
+            <strong id="llm-status">Disabled</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="chat-panel">
+          <div class="panel-header">
+            <h2>Conversational Query</h2>
+            <p>Queries are grounded in the dataset only.</p>
+          </div>
+
+          <div class="prompt-strip">
+            <button class="sample-prompt" data-prompt="Which products are associated with the highest number of billing documents?">
+              Top billed products
+            </button>
+            <button class="sample-prompt" data-prompt="Trace the full flow of billing document 90504298">
+              Trace billing flow
+            </button>
+            <button class="sample-prompt" data-prompt="Identify sales orders that have incomplete flows">
+              Broken flows
+            </button>
+          </div>
+
+          <div id="messages" class="messages"></div>
+
+          <form id="chat-form" class="chat-form">
+            <textarea id="chat-input" rows="4" placeholder="Ask about orders, deliveries, billing documents, products, customers, or payments"></textarea>
+            <button type="submit">Run Query</button>
+          </form>
+        </section>
+
+        <section class="graph-panel">
+          <div class="panel-header">
+            <h2>Graph View</h2>
+            <p>Overview graph first, query-specific graph after each answer.</p>
+          </div>
+          <div id="graph" class="graph-canvas"></div>
+          <div class="details-grid">
+            <article class="inspector-card">
+              <h3>Node Inspector</h3>
+              <pre id="inspector">Click a node to inspect its metadata.</pre>
+            </article>
+            <article class="inspector-card">
+              <h3>Executed SQL</h3>
+              <pre id="sql-preview">No query executed yet.</pre>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+  </html>

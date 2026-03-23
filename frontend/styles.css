@@ -1,0 +1,252 @@
+:root {
+  --bg: #f1ecdf;
+  --panel: rgba(255, 252, 245, 0.9);
+  --panel-strong: #fff8eb;
+  --line: rgba(36, 34, 28, 0.12);
+  --ink: #191610;
+  --muted: #5f594f;
+  --accent: #a63d2f;
+  --accent-soft: #f6d8cc;
+  --shadow: 0 24px 60px rgba(54, 42, 18, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Space Grotesk", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(166, 61, 47, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(25, 73, 77, 0.12), transparent 26%),
+    linear-gradient(180deg, #f7f1e2, #efe4d0);
+}
+
+.page-shell {
+  width: min(1440px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 24px 0 32px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 0.9fr);
+  gap: 18px;
+  align-items: stretch;
+  margin-bottom: 18px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3.7rem);
+  line-height: 0.95;
+}
+
+.hero-copy {
+  max-width: 840px;
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.hero-card,
+.chat-panel,
+.graph-panel,
+.inspector-card {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+}
+
+.hero-card {
+  padding: 22px;
+  display: grid;
+  gap: 14px;
+  align-content: center;
+}
+
+.metric {
+  padding: 14px 16px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+.metric-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.metric strong {
+  font-size: 1.4rem;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.chat-panel,
+.graph-panel {
+  padding: 18px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 16px;
+}
+
+.panel-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.prompt-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.sample-prompt,
+.chat-form button {
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 150ms ease;
+}
+
+.sample-prompt {
+  padding: 10px 14px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.sample-prompt:hover,
+.chat-form button:hover {
+  transform: translateY(-1px);
+}
+
+.messages {
+  min-height: 430px;
+  max-height: 62vh;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.message {
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+}
+
+.message.user {
+  background: #fff4e4;
+}
+
+.message.assistant {
+  background: #fcfbf7;
+}
+
+.message-header {
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.message pre,
+#inspector,
+#sql-preview {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.chat-form {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.chat-form textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 110px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 253, 247, 0.92);
+  padding: 14px;
+  font: inherit;
+}
+
+.chat-form button {
+  justify-self: end;
+  padding: 12px 18px;
+  background: var(--accent);
+  color: white;
+}
+
+.graph-canvas {
+  height: 520px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(252, 246, 235, 0.95)),
+    repeating-linear-gradient(90deg, transparent, transparent 36px, rgba(36, 34, 28, 0.03) 36px, rgba(36, 34, 28, 0.03) 37px);
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.inspector-card {
+  padding: 14px;
+  min-height: 180px;
+}
+
+@media (max-width: 1080px) {
+  .hero,
+  .workspace,
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .messages {
+    max-height: none;
+  }
+}
