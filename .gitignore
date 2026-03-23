@@ -10,3 +10,5 @@ data/processed/*.tmp
 frontend/vendor/
 node_modules/
 dist/
+
+.vercel
