@@ -6,7 +6,7 @@ backend/.env
 data/raw/dataset_download
 data/raw/dataset.zip
 data/raw/extracted/
-data/processed/
+data/processed/*.tmp
 frontend/vendor/
 node_modules/
 dist/
